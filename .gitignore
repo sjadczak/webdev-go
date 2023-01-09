@@ -11,6 +11,7 @@
 *.dll
 *.so
 *.dylib
+lenslocked
 
 # Test binary, built with `go test -c`
 *.test
@@ -93,3 +94,6 @@ tags
 [._]*.un~
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux,vim,go
+modd.conf
+*/modd.conf
+**/modd.conf
