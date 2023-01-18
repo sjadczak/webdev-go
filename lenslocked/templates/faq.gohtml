@@ -1,15 +1,15 @@
 	<h1>FAQs</h1>
 	<ul>
-		<li>
-			<p><b>Q: Is there a free version?</b></p>
-			<p>A: Yes! We offer a free trial for 30 days on any paid plans.</p>
-		</li>
-		<li>
-			<p><b>Q: What are your support hours?</b></p>
-			<p>A: We have support staff answering emails 24/7, though response times may be a bit slower on weekends.</p>
-		</li>
-		<li>
-			<p><b>Q: How do I contact support?</b></p>
-			<p>A: Email us - <a href="mailto:support@lenslocked.com">support@lenslocked.com</a></p>
-		</li>
+		{{ range . }}
+			{{ template "qa" . }}
+		{{ end }}
 	</ul>
+
+	{{ define "qa" }}
+		<li>
+			<div>
+				<b>{{ .Question }}</b>
+			</div>
+			<div>{{ .Answer }}</div>
+		</li>
+	{{ end }}
