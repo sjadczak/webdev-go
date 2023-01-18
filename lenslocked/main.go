@@ -3,61 +3,40 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/sjadczak/webdev-go/lenslocked/views"
 )
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func executeTemplate(w http.ResponseWriter, filepath string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<h1>Welcome to my awesome site!</h1>")
+	tpl, err := views.Parse(filepath)
+	if err != nil {
+		http.Error(w, "There was an error parsing the template.", http.StatusInternalServerError)
+		return
+	}
+	tpl.Execute(w, nil)
 }
 
-func greeterHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	name := chi.URLParam(r, "name")
-
-	for k, v := range r.URL.Query() {
-		fmt.Printf("%v: %v (%T)\n", k, v, v)
-	}
-
-	msg := fmt.Sprintf(`
-	<h1>Dynamic Greetings, again!</h1>
-	<p>Hello, %v</p>
-	`, name)
-
-	fmt.Fprint(w, msg)
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	tplPath := filepath.Join("templates", "home.gohtml")
+	executeTemplate(w, tplPath)
 }
 
 func contactHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, "<h1>Contact Page</h1><p>To get in touch, email me at <a href=\"mailto:stevejadczak@gmail.com\">stevejadczak@gmail.com</a>.</p>")
+	tplPath := filepath.Join("templates", "contact.gohtml")
+	executeTemplate(w, tplPath)
 }
 
 func faqHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, `
-	<h1>FAQs</h1>
-	<ul>
-		<li>
-			<p><b>Q: Is there a free version?</b></p>
-			<p>A: Yes! We offer a free trial for 30 days on any paid plans.</p>
-		</li>
-		<li>
-			<p><b>Q: What are your support hours?</b></p>
-			<p>A: We have support staff answering emails 24/7, though response times may be a bit slower on weekends.</p>
-		</li>
-		<li>
-			<p><b>Q: How do I contact support?</b></p>
-			<p>A: Email us - <a href="mailto:support@lenslocked.com">support@lenslocked.com</a></p>
-		</li>
-	</ul>
-	`)
+	tplPath := filepath.Join("templates", "faq.gohtml")
+	executeTemplate(w, tplPath)
 }
 
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprint(w, "<h1>404 Not Found!</h1><p>Go <a href=\"/\">home</a>, you're drunk.</p>")
+	tplPath := filepath.Join("templates", "notfound.gohtml")
+	executeTemplate(w, tplPath)
 }
 
 func configureRouter() chi.Router {
@@ -66,12 +45,6 @@ func configureRouter() chi.Router {
 
 	// Add routes
 	r.Get("/", indexHandler)
-
-	r.Route("/{name}", func(r chi.Router) {
-		r.Use(middleware.Logger)
-		r.Get("/", greeterHandler)
-	})
-
 	r.Get("/contact", contactHandler)
 	r.Get("/faq", faqHandler)
 	r.NotFound(notFoundHandler)

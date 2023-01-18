@@ -1,10 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<title></title>
+  <meta charset="UTF-8">
+  <title>Template Example</title>
 </head>
 <body>
-	<h1>Hello, {{.Name}}</h1>
+  <h1>Hello, {{.Name}}</h1>
+  <p>Bio: {{.Bio}}</p>
+  <p>Age: {{.Age}}</p>
+  <p>Salary: ${{.Meta.Salary}}</p>
+  <p>Addresses:</p>
+  <ul>
+    {{ range $key, $val := .Meta.Addresses }}
+      <li>{{ $key }}: {{ $val }}</li>
+    {{ end }}
+  </ul>
+  <p>Grades:</p>
+  <ul>
+    {{ range $grade := .Meta.Grades }}
+      {{ if gt $grade 65 }}
+        <li>Pass 😀</li>
+      {{ else }}
+        <li>Fail ☹️</li>
+      {{ end }}
+    {{ end }}
+  </ul>
+
 </body>
 </html>
