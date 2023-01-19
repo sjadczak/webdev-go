@@ -1,4 +1,8 @@
-<h1>Contact Page</h1>
-<p>To get in touch, email me at 
-	<a href="mailto:stevejadczak@gmail.com">stevejadczak@gmail.com</a>.
-</p>
+{{ define "page" }}
+	<div class="flex flex-col items-center">
+		<h1 class="py-4 text-4xl font-semibold tracking-tight">Contact Page</h1>
+		<p class="text-lg text-gray-800 py-4">To get in touch, email me at 
+			<a class="text-blue-800 hover:underline" href="mailto:stevejadczak@gmail.com">stevejadczak@gmail.com</a>.
+		</p>
+	</div>
+{{ end }}

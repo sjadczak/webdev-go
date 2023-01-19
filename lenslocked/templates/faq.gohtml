@@ -1,15 +1,19 @@
-	<h1>FAQs</h1>
-	<ul>
-		{{ range . }}
-			{{ template "qa" . }}
-		{{ end }}
-	</ul>
+{{ define "page" }}	
+	<div class="flex flex-col items-center">
+		<h1 class="py-4 text-4xl font-semibold tracking-tight">FAQs</h1>
+		<ul class="list-disc">
+			{{ range . }}
+				{{ template "qa" . }}
+			{{ end }}
+		</ul>
+	</div>
+{{ end }}
 
-	{{ define "qa" }}
-		<li>
-			<div>
-				<b>{{ .Question }}</b>
-			</div>
-			<div>{{ .Answer }}</div>
-		</li>
-	{{ end }}
+{{ define "qa" }}
+	<li class="p-4">
+		<div class="flex flex-col">
+			<p class="text-lg font-bold">{{ .Question }}</p>
+		</div>
+		<p class="text-lg">{{ .Answer }}</p>
+	</li>
+{{ end }}
