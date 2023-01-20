@@ -22,6 +22,10 @@ func main() {
 	tpl = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "faq.gohtml"))
 	r.Get("/faq", controllers.FAQ(tpl))
 
+	usersC := controllers.Users{}
+	usersC.Templates.New = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "signup.gohtml"))
+	r.Get("/signup", usersC.New)
+
 	tpl = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "notfound.gohtml"))
 	r.NotFound(controllers.StaticHandler(tpl))
 
