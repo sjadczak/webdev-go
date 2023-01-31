@@ -67,4 +67,20 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("lenslocked> tables created.")
+
+	// Insert some data
+	name := "Jessica Jadczak"
+	email := "jessica@test.com"
+	row := db.QueryRow(`
+		INSERT INTO users (name, email)
+		VALUES ($1, $2)
+		RETURNING id;
+	`, name, email)
+	var id int
+	err = row.Scan(&id)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("lenslocked> user created with id %d.\n", id)
 }
