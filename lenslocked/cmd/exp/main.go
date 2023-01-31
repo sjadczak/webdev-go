@@ -44,5 +44,27 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("Connected to db!")
+	fmt.Println("lenslocked> connected")
+
+	// Create a table...
+	fmt.Println("lenslocked> creating tables...")
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			id SERIAL PRIMARY KEY,
+			name TEXT,
+			email TEXT UNIQUE NOT NULL
+		);
+
+		CREATE TABLE IF NOT EXISTS orders (
+			id SERIAL PRIMARY KEY,
+			user_id INT,
+			amount INT,
+			description TEXT,
+			FOREIGN KEY(user_id) REFERENCES users(id)
+		);
+	`)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("lenslocked> tables created.")
 }
