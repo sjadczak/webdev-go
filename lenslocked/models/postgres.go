@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"runtime"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
@@ -19,8 +20,15 @@ func Open(cfg PostgresConfig) (*sql.DB, error) {
 }
 
 func DefaultPostgresConfig() PostgresConfig {
+	var host string
+	switch runtime.GOOS {
+	case "darwin":
+		host = "192.168.99.102"
+	default:
+		host = "localhost"
+	}
 	return PostgresConfig{
-		Host:     "localhost",
+		Host:     host,
 		Port:     "5432",
 		User:     "dev",
 		Password: "dev",
