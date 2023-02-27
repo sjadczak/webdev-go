@@ -51,7 +51,7 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 		INSERT INTO sessions (user_id, token_hash)
 		VALUES ($1, $2)
 		ON CONFLICT (user_id)
-		DO UPDATE SET token_hash = excluded.token_hash
+			DO UPDATE SET token_hash = excluded.token_hash
 		RETURNING id
 	`, session.UserID, session.TokenHash)
 	err = row.Scan(&session.ID)
