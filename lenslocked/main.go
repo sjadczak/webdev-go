@@ -59,14 +59,19 @@ func main() {
 	tpl = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "notfound.gohtml"))
 	r.NotFound(controllers.StaticHandler(tpl))
 
-	fmt.Println("Starting the server on :3000...")
+	umw := controllers.UserMiddleware{
+		SessionService: &sessionService,
+	}
+
 	csrfKey := "a29fghadf092yh3rhglaisdfh2as$@Fas"
 	csrfMw := csrf.Protect(
 		[]byte(csrfKey),
 		// TODO: fix before deploying
 		csrf.Secure(false),
 	)
-	http.ListenAndServe("127.0.0.1:3000", csrfMw(r))
+
+	fmt.Println("Starting the server on :3000...")
+	http.ListenAndServe("127.0.0.1:3000", csrfMw(umw.SetUser(r)))
 }
 
 //func TimerMiddleware(next http.HandlerFunc) http.HandlerFunc {
