@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
 	"github.com/sjadczak/webdev-go/lenslocked/controllers"
+	"github.com/sjadczak/webdev-go/lenslocked/migrations"
 	"github.com/sjadczak/webdev-go/lenslocked/models"
 	"github.com/sjadczak/webdev-go/lenslocked/templates"
 	"github.com/sjadczak/webdev-go/lenslocked/views"
@@ -30,6 +31,11 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+	err = models.MigrateFS(db, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
+
 	userService := models.UserService{
 		DB: db,
 	}
@@ -63,10 +69,10 @@ func main() {
 	http.ListenAndServe("127.0.0.1:3000", csrfMw(r))
 }
 
-//func TimerMiddleware(h http.HandlerFunc) http.HandlerFunc {
+//func TimerMiddleware(next http.HandlerFunc) http.HandlerFunc {
 //return func(w http.ResponseWriter, r *http.Request) {
 //start := time.Now()
-//h(w, r)
+//next(w, r)
 //fmt.Println("Request time:", time.Since(start))
 //}
 //}
