@@ -1,26 +1,37 @@
 package main
 
 import (
-	stdctx "context"
 	"fmt"
 
-	"github.com/sjadczak/webdev-go/lenslocked/context"
 	"github.com/sjadczak/webdev-go/lenslocked/models"
 )
 
-type ctxKey string
-
 const (
-	favoriteColorKey ctxKey = "favorite-color"
+	host     = "sandbox.smtp.mailtrap.io"
+	port     = 587
+	username = "9785379ab2eb36"
+	password = "2c5cede8eab45a"
 )
 
 func main() {
-	ctx := stdctx.Background()
-	user := models.User{
-		Email: "steve@jadczak.com",
+	email := models.Email{
+		From:      "test@lenslocked.com",
+		To:        "steve@jadczak.com",
+		Subject:   "This is a test email",
+		Plaintext: "This is the body of the email.",
+		HTML:      `<h1>Hello there!</h1><p>This is the email</p><p>Hope you enjoy it</p>`,
 	}
 
-	ctx = context.WithUser(ctx, &user)
-	retrievedUser := context.User(ctx)
-	fmt.Println(retrievedUser.Email)
+	es := models.NewEmailService(models.SMTPConfig{
+		Host:     host,
+		Port:     port,
+		Username: username,
+		Password: password,
+	})
+
+	err := es.Send(email)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("lenslocked> email sent")
 }

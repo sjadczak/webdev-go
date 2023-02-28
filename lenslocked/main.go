@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
+	"github.com/joho/godotenv"
 	"github.com/sjadczak/webdev-go/lenslocked/controllers"
 	"github.com/sjadczak/webdev-go/lenslocked/migrations"
 	"github.com/sjadczak/webdev-go/lenslocked/models"
@@ -14,6 +16,21 @@ import (
 )
 
 func main() {
+	// Load Env Variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file.")
+	}
+
+	//host := os.Getenv("SMTP_HOST")
+	//portStr := os.Getenv("SMTP_PORT")
+	//port, err := strconv.Atoi(portStr)
+	//if err != nil {
+	//log.Fatal("SMTP_PORT not an integer.")
+	//}
+	//username := os.Getenv("SMTP_USERNAME")
+	//password := os.Getenv("SMTP_PASSWORD")
+
 	// Set up database
 	cfg := models.DefaultPostgresConfig()
 	db, err := models.Open(cfg)
@@ -33,6 +50,12 @@ func main() {
 	sessionService := models.SessionService{
 		DB: db,
 	}
+	//emailService := models.NewEmailService(models.SMTPConfig{
+	//Host:     host,
+	//Port:     port,
+	//Username: username,
+	//Password: password,
+	//})
 
 	// Set up middleware
 	umw := controllers.UserMiddleware{
