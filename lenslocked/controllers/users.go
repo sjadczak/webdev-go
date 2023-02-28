@@ -52,6 +52,7 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email string
 	}
+
 	data.Email = r.FormValue("email")
 	u.Templates.SignIn.Execute(w, r, data)
 }
@@ -78,8 +79,14 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	q := r.URL.Query()
+	next := q.Get("next")
+	if next == "" {
+		next = "/users/me"
+	}
+
 	setCookie(w, CookieSession, session.Token)
-	http.Redirect(w, r, "/users/me", http.StatusFound)
+	http.Redirect(w, r, next, http.StatusFound)
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -133,6 +140,25 @@ func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ctx = context.WithUser(ctx, user)
 		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user := context.User(ctx)
+		if user == nil {
+			target := r.URL.Path
+			path := *r.URL
+			path.Path = "/signin"
+			q := path.Query()
+			q.Add("next", target)
+			path.RawQuery = q.Encode()
+
+			http.Redirect(w, r, path.String(), http.StatusFound)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
