@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
@@ -15,25 +17,56 @@ import (
 	"github.com/sjadczak/webdev-go/lenslocked/views"
 )
 
-func main() {
-	// Load Env Variables
+type config struct {
+	PSQL models.PostgresConfig
+	SMTP models.SMTPConfig
+	CSRF struct {
+		Key    string
+		Secure bool
+	}
+	Server struct {
+		Address string
+	}
+}
+
+func loadEnvConfig() (config, error) {
+	var cfg config
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file.")
+		return cfg, err
 	}
 
-	//host := os.Getenv("SMTP_HOST")
-	//portStr := os.Getenv("SMTP_PORT")
-	//port, err := strconv.Atoi(portStr)
-	//if err != nil {
-	//log.Fatal("SMTP_PORT not an integer.")
-	//}
-	//username := os.Getenv("SMTP_USERNAME")
-	//password := os.Getenv("SMTP_PASSWORD")
+	// TODO: PSQL from ENV
+	cfg.PSQL = models.DefaultPostgresConfig()
 
-	// Set up database
-	cfg := models.DefaultPostgresConfig()
-	db, err := models.Open(cfg)
+	// SMTP
+	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
+	smtpPortStr := os.Getenv("SMTP_PORT")
+	smtpPort, err := strconv.Atoi(smtpPortStr)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.SMTP.Port = smtpPort
+	cfg.SMTP.Username = os.Getenv("SMTP_USERNAME")
+	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
+
+	// TODO: CSRF from ENV
+	cfg.CSRF.Key = "a29fghadf092yh3rhglaisdfh2as$@Fas"
+	cfg.CSRF.Secure = false
+
+	// Server config
+	cfg.Server.Address = "127.0.0.1:3000"
+
+	return cfg, nil
+}
+
+func main() {
+	cfg, err := loadEnvConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db, err := models.Open(cfg.PSQL)
 	if err != nil {
 		panic(err)
 	}
@@ -44,35 +77,38 @@ func main() {
 	}
 
 	// Set up services
-	userService := models.UserService{
+	userService := &models.UserService{
 		DB: db,
 	}
-	sessionService := models.SessionService{
+	sessionService := &models.SessionService{
 		DB: db,
 	}
-	//emailService := models.NewEmailService(models.SMTPConfig{
-	//Host:     host,
-	//Port:     port,
-	//Username: username,
-	//Password: password,
-	//})
+	emailService := models.NewEmailService(models.SMTPConfig{
+		Host:     cfg.SMTP.Host,
+		Port:     cfg.SMTP.Port,
+		Username: cfg.SMTP.Username,
+		Password: cfg.SMTP.Password,
+	})
+	pwrService := &models.PasswordResetService{
+		DB: db,
+	}
 
 	// Set up middleware
 	umw := controllers.UserMiddleware{
-		SessionService: &sessionService,
+		SessionService: sessionService,
 	}
 
-	csrfKey := "a29fghadf092yh3rhglaisdfh2as$@Fas"
 	csrfMw := csrf.Protect(
-		[]byte(csrfKey),
-		// TODO: fix before deploying
-		csrf.Secure(false),
+		[]byte(cfg.CSRF.Key),
+		csrf.Secure(cfg.CSRF.Secure),
 	)
 
 	// Set up handlers
 	usersC := controllers.Users{
-		UserService:    &userService,
-		SessionService: &sessionService,
+		UserService:          userService,
+		SessionService:       sessionService,
+		EmailService:         emailService,
+		PasswordResetService: pwrService,
 	}
 
 	// Set up router & routes
@@ -90,11 +126,18 @@ func main() {
 
 	usersC.Templates.New = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "signup.gohtml"))
 	usersC.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "signin.gohtml"))
+	usersC.Templates.ForgotPassword = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "forgotpassword.gohtml"))
+	usersC.Templates.CheckYourEmail = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "checkemail.gohtml"))
+	usersC.Templates.ResetPassword = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "reset-password.gohtml"))
 	r.Get("/signup", usersC.New)
 	r.Post("/users", usersC.Create)
 	r.Get("/signin", usersC.SignIn)
 	r.Post("/signin", usersC.ProcessSignIn)
 	r.Post("/signout", usersC.SignOut)
+	r.Get("/forgot-pw", usersC.ForgotPassword)
+	r.Post("/forgot-pw", usersC.ProcessForgotPassword)
+	r.Get("/reset-pw", usersC.ResetPassword)
+	r.Post("/reset-pw", usersC.ProcessResetPassword)
 
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(umw.RequireUser)
@@ -104,8 +147,11 @@ func main() {
 	tpl = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "notfound.gohtml"))
 	r.NotFound(controllers.StaticHandler(tpl))
 
-	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe("127.0.0.1:3000", r)
+	fmt.Printf("Starting the server on %s...\n", cfg.Server.Address)
+	err = http.ListenAndServe(cfg.Server.Address, r)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 //func TimerMiddleware(next http.Handler) http.Handler {
