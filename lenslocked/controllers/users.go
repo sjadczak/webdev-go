@@ -194,7 +194,7 @@ func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Update the user's password
+	u.UserService.UpdatePassword(user.ID, data.Password)
 
 	// Sign the use rin now that their password has been reset.
 	// Any errros from this point onwards should redirect the user to the sign in page
