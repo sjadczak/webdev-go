@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,6 +14,12 @@ import (
 
 const (
 	DefaultResetDuration = 1 * time.Hour
+)
+
+var (
+	ErrUserNotFound = errors.New("models: user not found.")
+	ErrTokenInvalid = errors.New("models: token invalid.")
+	ErrTokenExpired = errors.New("models: token expired.")
 )
 
 type PasswordReset struct {
@@ -47,7 +54,9 @@ func (service *PasswordResetService) Create(email string) (*PasswordReset, error
 	WHERE email=$1;`, email)
 	err := row.Scan(&userID)
 	if err != nil {
-		// TODO: consider returning a specific error when the users does not exist.
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
 		return nil, fmt.Errorf("create: %w", err)
 	}
 
@@ -109,11 +118,18 @@ func (service *PasswordResetService) Consume(token string) (*User, error) {
 		&user.ID, &user.Email, &user.PasswordHash,
 	)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTokenInvalid
+		}
 		return nil, fmt.Errorf("consume: %w", err)
 	}
 
 	if time.Now().After(pwReset.ExpiresAt) {
-		return nil, fmt.Errorf("consume: token expired - %v", token)
+		err = service.delete(pwReset.ID)
+		if err != nil {
+			return nil, fmt.Errorf("consume: %w", err)
+		}
+		return nil, ErrTokenExpired
 	}
 
 	// Delete PasswordResetToken

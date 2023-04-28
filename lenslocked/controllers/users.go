@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/sjadczak/webdev-go/lenslocked/context"
+	"github.com/sjadczak/webdev-go/lenslocked/errors"
 	"github.com/sjadczak/webdev-go/lenslocked/models"
 )
 
@@ -34,13 +35,24 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 
 // Create new user from registration form
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
-	password := r.FormValue("password")
+	var data struct {
+		Email    string
+		Password string
+	}
+	data.Email = r.FormValue("email")
+	data.Password = r.FormValue("password")
 
-	user, err := u.UserService.Create(email, password)
+	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		var status int
+		if errors.Is(err, models.ErrEmailTaken) {
+			status = http.StatusBadRequest
+			err = errors.Public(err, "That email address is already associated with an account.")
+		} else {
+			status = http.StatusInternalServerError
+		}
+		w.WriteHeader(status)
+		u.Templates.New.Execute(w, r, data, err)
 		return
 	}
 
@@ -77,8 +89,15 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.UserService.Authenticate(data.Email, data.Password)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		var status int
+		if errors.Is(err, models.ErrAuthFailed) {
+			err = errors.Public(err, "Email address or password are not correct.")
+			status = http.StatusBadRequest
+		} else {
+			status = http.StatusInternalServerError
+		}
+		w.WriteHeader(status)
+		u.Templates.SignIn.Execute(w, r, data, err)
 		return
 	}
 
@@ -149,8 +168,15 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// TODO: Handle other cases in the future. For instance, if a user does not exist
 		// with that email address.
-		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		var status int
+		if errors.Is(err, models.ErrUserNotFound) {
+			err = errors.Public(err, "That email address is not associated with any registered users.")
+			status = http.StatusNotFound
+		} else {
+			status = http.StatusInternalServerError
+		}
+		w.WriteHeader(status)
+		u.Templates.ForgotPassword.Execute(w, r, data, err)
 		return
 	}
 
@@ -161,8 +187,8 @@ func (u Users) ProcessForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	err = u.EmailService.ForgotPassword(data.Email, resetURL)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		u.Templates.ForgotPassword.Execute(w, r, data, err)
 		return
 	}
 
@@ -189,8 +215,19 @@ func (u Users) ProcessResetPassword(w http.ResponseWriter, r *http.Request) {
 	user, err := u.PasswordResetService.Consume(data.Token)
 	if err != nil {
 		// TODO: distinguish between types of errors
-		fmt.Println(err)
-		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		if errors.Is(err, models.ErrTokenInvalid) {
+			fmt.Printf("Error: %v\n", err)
+			err = errors.Public(err, "This password reset token is invalid, please try resetting your password again.")
+			status = http.StatusBadRequest
+			data.Token = ""
+		} else if errors.Is(err, models.ErrTokenExpired) {
+			err = errors.Public(err, "Password reset token is expired, please try resetting password again.")
+			status = http.StatusBadRequest
+			data.Token = ""
+		}
+		w.WriteHeader(status)
+		u.Templates.ResetPassword.Execute(w, r, data, err)
 		return
 	}
 

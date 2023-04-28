@@ -2,10 +2,18 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrAuthFailed = errors.New("models: authentication failed.")
+	ErrEmailTaken = errors.New("models: email address is already in use")
 )
 
 type User struct {
@@ -37,6 +45,12 @@ func (us *UserService) Create(email, password string) (*User, error) {
 
 	err = row.Scan(&user.ID)
 	if err != nil {
+		var pgError *pgconn.PgError
+		if errors.As(err, &pgError) {
+			if pgError.Code == pgerrcode.UniqueViolation {
+				return nil, ErrEmailTaken
+			}
+		}
 		return nil, fmt.Errorf("create user: %w", err)
 	}
 
@@ -52,11 +66,17 @@ func (us *UserService) Authenticate(email, password string) (*User, error) {
 	row := us.DB.QueryRow(`SELECT id, password_hash FROM users WHERE email=$1`, email)
 	err := row.Scan(&user.ID, &user.PasswordHash)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrAuthFailed
+		}
 		return nil, fmt.Errorf("authenticate: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
+		if strings.Contains(err.Error(), "hashedPassword is not the hash of the given password") {
+			return nil, ErrAuthFailed
+		}
 		return nil, fmt.Errorf("authenticate: %w", err)
 	}
 
