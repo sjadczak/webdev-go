@@ -11,11 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	ErrAuthFailed = errors.New("models: authentication failed.")
-	ErrEmailTaken = errors.New("models: email address is already in use")
-)
-
 type User struct {
 	ID           int
 	Email        string
