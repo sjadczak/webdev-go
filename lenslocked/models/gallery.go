@@ -42,7 +42,7 @@ func (srv *GalleryService) ByID(id int) (*Gallery, error) {
 		FROM galleries
 		WHERE id = $1;
 	`, gallery.ID)
-	err := row.Scan(&gallery.Title, &gallery.UserID)
+	err := row.Scan(&gallery.UserID, &gallery.Title)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound

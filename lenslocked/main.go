@@ -98,8 +98,8 @@ func main() {
 
 	csrfMw := csrf.Protect(
 		[]byte(cfg.CSRF.Key),
-		// TODO: fix before deploying
 		csrf.Secure(cfg.CSRF.Secure),
+		csrf.Path("/"),
 	)
 
 	// Set up handlers
@@ -149,7 +149,18 @@ func main() {
 
 	// Configure Galleries Controller
 	galleriesC.Templates.New = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/new.gohtml"))
-	r.Get("/galleries/new", galleriesC.New)
+	galleriesC.Templates.Edit = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/edit.gohtml"))
+	galleriesC.Templates.Index = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "galleries/index.gohtml"))
+	r.Route("/galleries", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(umw.RequireUser)
+			r.Get("/", galleriesC.Index)
+			r.Get("/new", galleriesC.New)
+			r.Get("/{id}/edit", galleriesC.Edit)
+			r.Post("/", galleriesC.Create)
+			r.Post("/{id}", galleriesC.Update)
+		})
+	})
 
 	tpl = views.Must(views.ParseFS(templates.FS, "layout.gohtml", "notfound.gohtml"))
 	r.NotFound(controllers.StaticHandler(tpl))
