@@ -4,6 +4,36 @@
 			<h1 class="pt-4 pb-8 text-3xl font-bold text-gray-800">
 				My Galleries
 			</h1>
+			<table class="w-full table-fixed">
+				<thead>
+					<tr>
+						<th class="p-2 text-left w-24">ID</th>
+						<th class="p-2 text-left">Title</th>
+						<th class="p-2 text-left w-96">Actions</th>
+					</tr>
+					<tbody>
+						{{ range .Galleries }}
+						<tr class="border">
+							<td class="p-2 border">{{.ID}}</td>
+							<td class="p-2 border">{{.Title}}</td>
+							<td class="p-2 border flex space-x-2">
+								<a class="py-1 px-2 bg-blue-100 hover:bg-blue-200 rounded border border-blue-600 text-sm text-blue-600" href="/galleries/{{.ID}}">View</a>
+								<a class="py-1 px-2 bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-600 text-sm text-yellow-600" href="/galleries/{{.ID}}/edit">Edit</a>
+								<form action="/galleries/{{.ID}}/delete" method="POST" onsubmit="return confirm('Do you really want to delete this gallery?')">
+									{{csrfField}}
+									<button type="submit" class="py-1 px-2 bg-red-100 hover:bg-red-200 rounded border border-red-600 text-sm text-red-600">Delete</button>
+								</form>
+							</td>
+						</tr>
+					{{ end }}
+					</tbody>
+				</thead>
+			</table>
+			<div class="py-4">
+				<a class="py-2 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-lg" href="/galleries/new">
+					New Gallery
+				</a>
+			</div>
 		</div>
 	</div>	
 {{ end }}
