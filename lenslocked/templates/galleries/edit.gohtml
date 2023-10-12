@@ -27,6 +27,18 @@
 					</div>
 				</div>
 			</form>
+			<div class="py-4">
+				<h2 classname="pb-4 text-sm font-semibold text-gray-800">
+					Current Images
+				</h2>
+				<div class="py-2 grid grid-cols-8 gap-2">
+					{{ range .Images }}
+						<div class="h-min w-full relative">
+							<img classname="w-full" src="/galleries/{{.GalleryID}}/images/{{.FilenameEscaped}}">
+						</div>
+					{{ end }}
+				</div>
+			</div>
 			<!-- Danger Actions -->
 			<div class="py-4">
 				<h2>Dangerous Actions</h2>

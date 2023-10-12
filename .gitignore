@@ -12,6 +12,9 @@
 *.so
 *.dylib
 
+lenslocked/lenslocked
+lenslocked/images/
+
 # Test binary, built with `go test -c`
 *.test
 
