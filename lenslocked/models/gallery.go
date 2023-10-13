@@ -156,6 +156,20 @@ func (srv *GalleryService) Images(galleryID int) ([]Image, error) {
 	return images, nil
 }
 
+func (srv *GalleryService) DeleteImage(galleryID int, filename string) error {
+	image, err := srv.Image(galleryID, filename)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+
+	err = os.Remove(image.Path)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+
+	return nil
+}
+
 func (srv *GalleryService) galleryDir(id int) string {
 	imagesDir := srv.ImagesDir
 	if imagesDir == "" {
